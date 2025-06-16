@@ -106,14 +106,6 @@ def run():
         info(f"Result: {data}\n")
         time.sleep(0.5)
     
-    info('*** Network configuration completed\n')
-    info('*** Testing connectivity...\n')
-    
-    # Test di connettività iniziale
-    info('*** Ping test from h1 to h4\n')
-    h1 = net.get('h1')
-    result = h1.cmd('ping -c 1 192.168.1.2')
-    info(f'h1 ping h4: {result}\n')
     
     info('*** Running CLI\n')
     CLI(net)

@@ -1,4 +1,4 @@
-# advanced_controller.py (versione corretta)
+
 import ipaddress
 from ryu.base import app_manager
 from ryu.controller import ofp_event
@@ -15,7 +15,7 @@ class AdvancedRouterController(app_manager.RyuApp):
         self.router_dpids = [1, 2, 3, 4]
         self.switch_dpid = 5
 
-        # 1. INTERFACCE (rimane uguale)
+        # 1. INTERFACCE (MAC per IP) - Invariato
         self.router_interfaces = {
             1: {'10.0.0.1':'00:10:00:00:01:01', '200.0.0.1':'00:10:00:00:01:02', '170.0.0.1':'00:10:00:00:01:03'},
             2: {'200.0.0.2':'00:10:00:00:02:01', '192.168.1.1':'00:10:00:00:02:02'},
@@ -23,16 +23,32 @@ class AdvancedRouterController(app_manager.RyuApp):
             4: {'170.0.0.2':'00:10:00:00:04:01', '180.1.2.2':'00:10:00:00:04:02', '10.8.1.1':'00:10:00:00:04:03'}
         }
         
-        # 2. ASSOCIAZIONE IP -> PORTA (nuova struttura dati per semplicità)
-        # {dpid: {ip_addr: port_no}}
-        self.ip_to_port = {
-            1: {'10.0.0.1': 1, '200.0.0.1': 2, '170.0.0.1': 3},
-            2: {'200.0.0.2': 1, '192.168.1.1': 2},
-            3: {'180.1.2.1': 1, '11.0.0.1': 2},
-            4: {'170.0.0.2': 1, '180.1.2.2': 2, '10.8.1.1': 3}
+        # 2. DEFINIZIONI INTERFACCE 
+        # Ora mappiamo l'interfaccia completa (IP/prefix) alla sua porta.
+        # Questo rende la logica di lookup esplicita e robusta.
+        # {dpid: {'ip/prefixlen': port_no}}
+        self.interface_definitions = {
+            1: { # R1
+                '10.0.0.1/24': 1,      # Verso la LAN
+                '200.0.0.1/30': 2,     # P2P verso R2
+                '170.0.0.1/30': 3      # P2P verso R4
+            },
+            2: { # R2
+                '200.0.0.2/30': 1,     # P2P verso R1
+                '192.168.1.1/24': 2    # Verso la LAN
+            },
+            3: { # R3
+                '180.1.2.1/30': 1,     # P2P verso R4
+                '11.0.0.1/24': 2       # Verso la LAN
+            },
+            4: { # R4
+                '170.0.0.2/30': 1,     # P2P verso R1
+                '180.1.2.2/30': 2,     # P2P verso R3
+                '10.8.1.1/24': 3       # Verso la LAN
+            }
         }
         
-        # 3. TABELLA ARP GLOBALE (rimane uguale)
+        # 3. TABELLA ARP GLOBALE - Invariato
         self.arp_table = {
             '10.0.0.2': '00:00:00:00:00:01', '10.0.0.3': '00:00:00:00:00:02',
             '11.0.0.2': '00:00:00:00:00:03', '192.168.1.2': '00:00:00:00:00:04', '10.8.1.2': '00:00:00:00:00:05',
@@ -42,37 +58,18 @@ class AdvancedRouterController(app_manager.RyuApp):
             '170.0.0.2': '00:10:00:00:04:01', '180.1.2.2': '00:10:00:00:04:02', '10.8.1.1': '00:10:00:00:04:03'
         }
 
-        # 4. TABELLA DI ROUTING PER-ROUTER (La grande modifica!)
-        # {dpid: {'dest_subnet': 'next_hop_ip'}}
-        # 'direct' significa che la rete è direttamente connessa.
+        # 4. TABELLA DI ROUTING PER-ROUTER - Invariato
         self.routing_table = {
-            1: { # Rotte per R1
-                '10.0.0.0/24': 'direct',
-                '192.168.1.0/24': '200.0.0.2',
-                '11.0.0.0/24': '170.0.0.2',
-                '10.8.1.0/24': '170.0.0.2'
-            },
-            2: { # Rotte per R2
-                '192.168.1.0/24': 'direct',
-                '0.0.0.0/0': '200.0.0.1' # Rotta di default verso R1
-            },
-            3: { # Rotte per R3
-                '11.0.0.0/24': 'direct',
-                '0.0.0.0/0': '180.1.2.2' # Rotta di default verso R4
-            },
-            4: { # Rotte per R4
-                '10.8.1.0/24': 'direct',
-                '11.0.0.0/24': '180.1.2.1',
-                '10.0.0.0/24': '170.0.0.1',
-                '192.168.1.0/24': '170.0.0.1'
-            }
+            1: {'10.0.0.0/24': 'direct', '192.168.1.0/24': '200.0.0.2', '11.0.0.0/24': '170.0.0.2', '10.8.1.0/24': '170.0.0.2'},
+            2: {'192.168.1.0/24': 'direct', '0.0.0.0/0': '200.0.0.1'},
+            3: {'11.0.0.0/24': 'direct', '0.0.0.0/0': '180.1.2.2'},
+            4: {'10.8.1.0/24': 'direct', '11.0.0.0/24': '180.1.2.1', '10.0.0.0/24': '170.0.0.1', '192.168.1.0/24': '170.0.0.1'}
         }
         
         self.mac_to_port = {}
-        self.logger.info("Controller Avanzato (Corretto) avviato.")
+        self.logger.info("Controller P2P-Aware avviato.")
 
-    # (Le funzioni add_flow, _send_packet, _switch_features_handler, _packet_in_handler, _handle_l2_switch, _handle_arp non cambiano)
-    # ... Incolla qui le funzioni che non cambiano dal codice precedente ...
+    
     def add_flow(self, datapath, priority, match, actions, idle_timeout=0, hard_timeout=0):
         ofproto=datapath.ofproto; parser=datapath.ofproto_parser
         inst=[parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
@@ -129,23 +126,21 @@ class AdvancedRouterController(app_manager.RyuApp):
             p.add_protocol(arp.arp(opcode=arp.ARP_REPLY, src_mac=router_mac_for_reply, src_ip=arp_pkt.dst_ip, dst_mac=arp_pkt.src_mac, dst_ip=arp_pkt.src_ip))
             self._send_packet(datapath, port, p)
 
+
     # ====================================================================
-    # === LOGICA DI ROUTING _handle_ipv4 COMPLETAMENTE RISCRITTA ========
+    # === LOGICA DI ROUTING _handle_ipv4 
     # ====================================================================
     def _handle_ipv4(self, datapath, msg, in_port, eth, ipv4_pkt):
         parser = datapath.ofproto_parser
         dpid = datapath.id
         dst_ip_addr = ipaddress.ip_address(ipv4_pkt.dst)
 
-        # 1. Ottieni la tabella di routing specifica per questo router
         router_routes = self.routing_table.get(dpid)
         if not router_routes:
             self.logger.warning(f"DPID {dpid}: Nessuna tabella di routing definita.")
             return
 
-        # 2. Trova la rotta migliore (Longest-prefix match)
-        best_route = None
-        best_prefix = -1
+        best_route = None; best_prefix = -1
         for subnet_str, next_hop_str in router_routes.items():
             network = ipaddress.ip_network(subnet_str)
             if dst_ip_addr in network and network.prefixlen > best_prefix:
@@ -156,37 +151,32 @@ class AdvancedRouterController(app_manager.RyuApp):
             self.logger.warning(f"DPID {dpid}: Nessuna rotta trovata per {dst_ip_addr} nella sua tabella.")
             return
 
-        # 3. Determina il prossimo hop e il suo MAC
         next_hop_ip_str = best_route[1]
         if next_hop_ip_str == 'direct':
-            next_hop_ip_str = ipv4_pkt.dst # Il prossimo hop è la destinazione finale
+            next_hop_ip_str = ipv4_pkt.dst
 
         dst_mac = self.arp_table.get(next_hop_ip_str)
         if not dst_mac:
             self.logger.warning(f"DPID {dpid}: MAC non trovato per next-hop {next_hop_ip_str} in ARP table.")
             return
 
-        # 4. Determina la porta di uscita e il MAC sorgente del router
+        # --- Logica di lookup della porta di uscita migliorata ---
         out_port = None
         router_mac_src = None
         
-        # Cerca tra le interfacce di questo router quella che può raggiungere il next_hop
-        for if_ip_str, port_num in self.ip_to_port[dpid].items():
-            if_ip = ipaddress.ip_interface(f"{if_ip_str}/24") # Assumiamo /24 o /30
-            # Controllo per reti punto-punto /30
-            if ipaddress.ip_network(if_ip_str).max_prefixlen == 32 and if_ip.network.prefixlen < 31:
-                 if_ip = ipaddress.ip_interface(f"{if_ip_str}/30")
-
-            if ipaddress.ip_address(next_hop_ip_str) in if_ip.network:
+        # Itera attraverso le interfacce definite per questo router
+        for if_definition, port_num in self.interface_definitions[dpid].items():
+            if_obj = ipaddress.ip_interface(if_definition)
+            # Controlla se il nostro prossimo hop appartiene alla rete di questa interfaccia
+            if ipaddress.ip_address(next_hop_ip_str) in if_obj.network:
                 out_port = port_num
-                router_mac_src = self.router_interfaces[dpid][if_ip_str]
+                router_mac_src = self.router_interfaces[dpid][str(if_obj.ip)]
                 break
 
         if out_port is None or out_port == in_port:
             self.logger.warning(f"DPID {dpid}: Impossibile determinare out_port o rilevato loop. Next-Hop:{next_hop_ip_str}, Out:{out_port}, In:{in_port}")
             return
             
-        # 5. Crea azioni, installa la regola e invia il pacchetto
         actions = [
             parser.OFPActionSetField(eth_src=router_mac_src),
             parser.OFPActionSetField(eth_dst=dst_mac),

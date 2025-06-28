@@ -7,11 +7,11 @@ import socket
 import random
 import struct
 
-# --- Configurazione ---
-LOG_FILE = 'traceroute_log_final.json'
 
-# === MODIFICA CHIAVE ===
-# La lista degli IP di destinazione è ora definita direttamente qui.
+LOG_FILE = 'traceroute_log.json'
+
+
+# IP Target
 TARGET_HOSTS = [
     "10.0.0.2",   # h1
     "10.0.0.3",   # h2
@@ -19,9 +19,7 @@ TARGET_HOSTS = [
     "192.168.1.2",# h4
     "10.8.1.2"    # h5
 ]
-# =======================
 
-# --- Funzioni di Traceroute (invariate) ---
 
 def perform_trace(destination, max_hops=30):
     """Esegue un traceroute UDP e restituisce i risultati."""
@@ -70,7 +68,7 @@ def perform_trace(destination, max_hops=30):
             results.append(line)
 
             if curr_addr == dest_ip:
-                results.append(f'\nTraccia completata.')
+                results.append(f' Traceroute terminato ')
                 break
         else:
             line = '{:<5} {:<20}'.format(ttl, '*')
@@ -91,14 +89,12 @@ def create_sender(ttl):
     return s
 
 
-# --- Funzione Principale (invariata) ---
-
 def main():
     """
     Funzione principale che esegue un singolo ciclo di traceroute
     e salva i risultati su un file JSON.
     """
-    print(">>> Avvio ciclo singolo di traceroute...")
+    print(">>> Avvio  del comando  traceroute...")
     print(f">>> Destinazioni: {TARGET_HOSTS}")
     
     final_log = {
@@ -125,9 +121,9 @@ def main():
             json.dump(final_log, f, indent=4)
         print(f">>> Risultati completi salvati in {LOG_FILE}")
     except IOError as e:
-        print(f"!!! Errore durante la scrittura del file di log: {e}")
+        print(f" Errore durante la scrittura del file di log: {e}")
 
-    print(">>> Ciclo singolo completato. Lo script terminerà.")
+    print(">>> Traceroute completato. Lo script terminerà.")
 
 
 if __name__ == "__main__":

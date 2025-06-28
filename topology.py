@@ -1,6 +1,6 @@
-# final_topology_correct_order.py
 
-#!/usr/bin/python3
+
+
 
 from mininet.net import Mininet
 from mininet.node import Controller, RemoteController, OVSKernelSwitch
@@ -39,15 +39,15 @@ def create_topology():
     
     info('*** Creazione dei collegamenti interni (rispettando le porte del controller)\n')
     # Link tra i dispositivi della nostra rete gestita da Ryu
-    net.addLink(r1, s1, port1=1, port2=1)
-    net.addLink(r1, r2, port1=2, port2=1)
-    net.addLink(r1, r4, port1=3, port2=1)
-    net.addLink(r3, r4, port1=1, port2=2)
-    net.addLink(r2, h4, port1=2, port2=1)
-    net.addLink(r3, h3, port1=2, port2=1)
-    net.addLink(r4, h5, port1=3, port2=1)
-    net.addLink(s1, h1, port1=2, port2=1)
-    net.addLink(s1, h2, port1=3, port2=1)
+    net.addLink(r1, s1, port1=1, port2=1, bw=1000, delay="0.05ms")
+    net.addLink(r1, r2, port1=2, port2=1, bw=1,  delay="2ms")
+    net.addLink(r1, r4, port1=3, port2=1, bw=5,  delay="2ms")
+    net.addLink(r3, r4, port1=1, port2=2, bw=20,  delay="2ms")
+    net.addLink(r2, h4, port1=2, port2=1, bw=100, delay="0.05ms")
+    net.addLink(r3, h3, port1=2, port2=1, bw=1,  delay = "0.5ms")
+    net.addLink(r4, h5, port1=3, port2=1, bw=100, delay = "0.05ms")
+    net.addLink(s1, h1, port1=2, port2=1 ,bw=54, delay="0.05ms")
+    net.addLink(s1, h2, port1=3, port2=1 ,bw=54, delay="0.05ms" )
     net.addLink(r2, nat_router, port1=3, port2=1)
     net.addLink(nat_router, server, port1=2)
 

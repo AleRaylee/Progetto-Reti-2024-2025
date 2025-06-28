@@ -52,7 +52,7 @@ def create_topology():
     net.addLink(nat_router, server, port1=2)
 
    
-    info('*** Aggiunta e collegamento del nodo NAT di Mininet (inerte)\n')
+    info('*** Aggiunta e collegamento del nodo NAT di Mininet \n')
     # Aggiungiamo il NAT solo dopo che tutti i nostri link sono stati creati
     nat0 = net.addNAT(name='nat0', inNamespace=False)
     net.addLink(r2, nat0, port1=4)

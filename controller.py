@@ -11,7 +11,7 @@ class Controller(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(Controller, self).__init__(*args, **kwargs)
         
-        # --- Parametri NAT ---
+        #  Parametri NAT 
         self.nat_router_dpid = 6
         self.nat_public_ip = '172.16.0.254'
         self.server_ip = '192.168.100.10'
@@ -21,7 +21,7 @@ class Controller(app_manager.RyuApp):
         
         self.dnat_map = { 7001: (self.server_ip, 7001) }
         
-        # --- Identificatori dei Dispositivi ---
+        # Identificatori dei Dispositivi 
         self.router_dpids = [1, 2, 3, 4, self.nat_router_dpid]
         self.switch_dpid = 5
         
@@ -204,7 +204,7 @@ class Controller(app_manager.RyuApp):
             target_ip, target_port = self.dnat_map[tcp_pkt.dst_port]
             self.logger.info(f"NAT (FWD): Traduco richiesta per porta {tcp_pkt.dst_port} a {target_ip}:{target_port}")
             
-            # Regola per il traffico in avanti (da esterno a interno)
+            # Regola per il traffico di forward (da esterno a interno)
             match_fwd = parser.OFPMatch(in_port=self.nat_public_port, eth_type=eth.ethertype, ip_proto=6, 
                                         ipv4_src=ip_pkt.src, ipv4_dst=self.nat_public_ip, tcp_dst=tcp_pkt.dst_port)
             actions_fwd = [parser.OFPActionSetField(eth_dst=self.server_mac), 

@@ -1,0 +1,21 @@
+
+Eseguire i Server: 
+
+server sudo python traceroute_server.py
+
+h1 python h1_server.py &
+
+Comandi Permessi:
+
+h4 curl -s -X POST -d "command=ping -c 3 10.8.1.2" http://10.0.0.2:8001/execute
+
+h3 curl -s -X POST -d "command=ifconfig" http://10.0.0.2:8001/execute
+
+h5 curl -s -X POST -d "command=netstat -tulpn" http://10.0.0.2:8001/execute
+
+h2 curl -s -X POST -d "command=hostname" http://10.0.0.2:8001/execute
+
+Comandi non Permessi:
+
+h2 curl -s -X POST -d "command=ls -l /" http://10.0.0.2:8001/execute
+ 

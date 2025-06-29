@@ -5,10 +5,10 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 import socket 
 
-# --- Configurazione ---
+# Configurazione
 LOG_FILE = 'h1_command_log.json'
-# Lista di comandi sicuri permessi. 
-# Lo script permetterà solo comandi che iniziano con una di queste stringhe.
+# Lista di comandi permessi. 
+# Lo script permetterà solo che questi comandi vengono eseguiti.
 ALLOWED_COMMANDS = [
     'ping',
     'ifconfig',
@@ -45,7 +45,7 @@ def execute_command():
         'requested_command': command_to_run,
     }
 
-    # Controlli di sicurezza e validità
+    # Controlli di validita' dei commandi
     if not command_to_run:
         log_entry['status'] = 'error'
         log_entry['error_message'] = 'Parametro "command" mancante'
